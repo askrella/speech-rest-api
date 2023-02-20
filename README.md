@@ -24,9 +24,6 @@ pip install -r requirements.txt
 # (Optional) Set PORT environment variable
 export PORT=3000
 
-# Set FLASK production environment variable
-export FLASK_DEBUG=false
-
 # Run the REST API
 python app.py
 ```
