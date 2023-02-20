@@ -16,7 +16,7 @@ git clone https://github.com/askrella/whisper-rest-api.git
 cd whisper-rest-api
 
 # Install ffmpeg (Ubuntu & Debian)
-sudo apt update && sudo apt install ffmpeg
+sudo apt update && sudo apt install ffmpeg -y
 
 # Install the dependencies
 pip install -r requirements.txt
