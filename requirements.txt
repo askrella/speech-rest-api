@@ -25,6 +25,6 @@ transformers==4.26.1
 typing_extensions==4.5.0
 urllib3==1.26.14
 uuid==1.30
-Werkzeug==2.2.2
+Werkzeug==2.2.3
 whisper @ git+https://github.com/openai/whisper.git@0b5dcfdef7ec04250b76e13f1630e32b0935ce76
 zipp==3.8.1
