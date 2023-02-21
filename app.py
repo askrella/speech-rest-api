@@ -1,16 +1,37 @@
 import os
 import uuid
-from flask import Flask, request, jsonify
-import whisper
 import tempfile
+from flask import Flask, request, jsonify, send_file
+import torchaudio
+from speechbrain.pretrained import Tacotron2, HIFIGAN
+import whisper
 
-# Flask app
 app = Flask(__name__)
 
-# Load model
+# Load TTS model
+tacotron2 = Tacotron2.from_hparams(source="speechbrain/tts-tacotron2-ljspeech", savedir="tmpdir_tts")
+hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-ljspeech", savedir="tmpdir_vocoder")
+
+# Load transcription model
 model = whisper.load_model("base")
 
-# Transcribe route
+@app.route('/tts', methods=['POST'])
+def generate_tts():
+    if not request.json or not 'sentences' in request.json:
+        return jsonify({'error': 'Invalid input'})
+    sentences = request.json['sentences']
+    # Running the TTS
+    mel_outputs, mel_lengths, alignments = tacotron2.encode_batch(sentences)
+
+    # Running Vocoder (spectrogram-to-waveform)
+    waveforms = hifi_gan.decode_batch(mel_outputs)
+
+    # Save the waveform to a file
+    file_path = 'example_TTS.wav'
+    torchaudio.save(file_path, waveforms.squeeze(1), 22050)
+
+    return send_file(file_path, mimetype='audio/wav')
+
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     if 'audio' not in request.files:
@@ -42,22 +63,19 @@ def transcribe():
 
     # Delete tmp file
     os.remove(tmp_path)
-    
+
     return jsonify({
         'language': language,
         'text': text_result_trim
     }), 200
 
-# Health check route
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok'}), 200
 
-# Entry point
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3000))
 
     print("[Whisper REST API] Starting server on port " + str(port))
 
-    # Start the server
-    app.run(port=port, debug=False)
+    app.run(host='0.0.0.0', port=80)

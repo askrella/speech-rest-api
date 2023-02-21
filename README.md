@@ -30,27 +30,82 @@ python app.py
 
 ## Documentation
 
-### Request
-```
-Endpoint: /transcribe
-Method: POST
-Content-Type: multipart/form-data
+This endpoint generates speech from a list of input sentences using the Tacotron2 and HiFiGAN models.
 
-Form Data:
-    audio: audio file
+
+```bash
+POST http://localhost:80/tts
 ```
 
-### Response
-    
+
+The request body must be a JSON object with the following field:
+
+- sentences (required): A list of sentences to be converted to speech.
+
+Example:
+
 ```json
 {
-    "language": "en",
-    "text": "hello world"
+    "sentences": [
+        "Hello, how are you?",
+        "My name is ChatGPT.",
+        "It's a pleasure to meet you."
+    ]
 }
 ```
 
-## Example CURL
+
+The response is an audio file in WAV format containing the generated speech.
+
+
+Here's an example curl command that generates speech from a list of input sentences:
+
+```sh
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"sentences": ["Hello, how are you?", "My name is Shubh.", "It\'s a pleasure to meet you."]}' \
+  http://localhost:80/tts \
+  --output output.wav
+```
+
+This curl command sends a JSON payload with a list of three input sentences to the /tts endpoint, and saves the resulting audio file to output.wav.
+
+
+This endpoint transcribes audio files using the Whisper model.
+
 
 ```bash
-curl -X POST -H "Content-Type: multipart/form-data" -F "audio=/path/to/audio.wav" http://localhost:3000/transcribe
+POST http://localhost:80/transcribe
 ```
+
+
+The request body must be a form data object containing an audio file.
+
+Example:
+
+```form
+audio=@path/to/your/audio/file.wav
+```
+
+
+The response is a JSON object containing the detected language and the transcribed text.
+
+Example:
+
+```json
+{
+    "language": "en-US",
+    "text": "Hello, how are you?"
+}
+```
+
+
+Here's an example curl command that transcribes an audio file:
+
+```css 
+curl -X POST \
+  -F "audio=@path/to/your/audio/file.wav" \
+  http://localhost:80/transcribe
+```
+
+This curl command sends an HTTP POST request to the /transcribe endpoint with a form data containing the audio file. The detected language and transcribed text are returned as a JSON object.
