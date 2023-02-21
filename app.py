@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, send_file
 import torchaudio
 from speechbrain.pretrained import Tacotron2, HIFIGAN
 import whisper
+from pydub import AudioSegment
 
 # Flask app
 app = Flask(__name__)
@@ -16,6 +17,7 @@ hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-ljspeech", saved
 # TTS file prefix
 speech_tts_prefix = "speech-tts-"
 wav_suffix = ".wav"
+ogg_suffix = ".ogg"
 
 # Load transcription model
 model = whisper.load_model("base")
@@ -44,13 +46,23 @@ def generate_tts():
     # Running Vocoder (spectrogram-to-waveform)
     waveforms = hifi_gan.decode_batch(mel_outputs)
 
-    # Save waveform to temporary file
+    # Get temporary directory
     tmp_dir = tempfile.gettempdir()
-    tmp_path = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + wav_suffix)
-    torchaudio.save(tmp_path, waveforms.squeeze(1), 22050)
+
+    # Save wav to temporary file
+    tmp_path_wav = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + wav_suffix)
+    torchaudio.save(tmp_path_wav, waveforms.squeeze(1), 22050)
+
+    # Convert file from wav to ogg
+    audio = AudioSegment.from_wav(tmp_path_wav)
+    tmp_path_ogg = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + ogg_suffix)
+    audio.export(tmp_path_ogg, format="ogg")
+
+    # Delete wav file
+    os.remove(tmp_path_wav)
 
     # Send file response
-    return send_file(tmp_path, mimetype='audio/wav')
+    return send_file(tmp_path_ogg, mimetype='audio/wav')
 
 # Transcribe endpoint
 @app.route('/transcribe', methods=['POST'])
