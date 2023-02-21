@@ -1,6 +1,9 @@
-# Whisper REST API
+# Speech REST API
 
-This project provides a simple Flask API to transcribe speech from an audio file using the Whisper speech recognition library. The API loads a pre-trained deep learning model to detect the spoken language and transcribe the speech to text.
+This project provides a simple Flask API to transcribe speech from an audio file using the Whisper speech recognition library.
+The API loads a pre-trained deep learning model to detect the spoken language and transcribe the speech to text.
+
+It also provides an endpoint to generate speech from a list of input sentences using the Tacotron2 and HiFiGAN models.
 
 ## Requirements
 
@@ -10,10 +13,10 @@ This project provides a simple Flask API to transcribe speech from an audio file
 
 ```bash
 # Clone the repository
-git clone https://github.com/askrella/whisper-rest-api.git
+git clone https://github.com/askrella/speech-rest-api.git
 
 # Navigate to the project directory
-cd whisper-rest-api
+cd speech-rest-api
 
 # Install ffmpeg (Ubuntu & Debian)
 sudo apt update && sudo apt install ffmpeg -y
