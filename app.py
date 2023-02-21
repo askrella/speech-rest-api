@@ -17,7 +17,7 @@ hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-ljspeech", saved
 # TTS file prefix
 speech_tts_prefix = "speech-tts-"
 wav_suffix = ".wav"
-ogg_suffix = ".ogg"
+opus_suffix = ".opus"
 
 # Load transcription model
 model = whisper.load_model("base")
@@ -55,14 +55,14 @@ def generate_tts():
 
     # Convert file from wav to ogg
     audio = AudioSegment.from_wav(tmp_path_wav)
-    tmp_path_ogg = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + ogg_suffix)
-    audio.export(tmp_path_ogg, format="ogg")
+    tmp_path_opus = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + opus_suffix)
+    audio.export(tmp_path_opus, format="opus")
 
     # Delete wav file
     os.remove(tmp_path_wav)
 
     # Send file response
-    return send_file(tmp_path_ogg, mimetype='audio/wav')
+    return send_file(tmp_path_opus, mimetype='audio/ogg, codecs=opus')
 
 # Transcribe endpoint
 @app.route('/transcribe', methods=['POST'])
@@ -107,11 +107,14 @@ def transcribe():
 def health():
     return jsonify({'status': 'ok'}), 200
 
+@app.route('/clean', methods=['GET'])
+def clean():
+    clean_tmp()
+    return jsonify({'status': 'ok'}), 200
+
 # Entry point
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3000))
-
-    # TODO: Run clean_tmp() every 5 minutes
 
     # Start server
     print("[Speech REST API] Starting server on port " + str(port))
