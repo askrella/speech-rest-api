@@ -32,11 +32,9 @@ python app.py
 
 This endpoint generates speech from a list of input sentences using the Tacotron2 and HiFiGAN models.
 
-
 ```bash
 POST http://localhost:80/tts
 ```
-
 
 The request body must be a JSON object with the following field:
 

@@ -6,36 +6,57 @@ import torchaudio
 from speechbrain.pretrained import Tacotron2, HIFIGAN
 import whisper
 
+# Flask app
 app = Flask(__name__)
 
 # Load TTS model
 tacotron2 = Tacotron2.from_hparams(source="speechbrain/tts-tacotron2-ljspeech", savedir="tmpdir_tts")
 hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-ljspeech", savedir="tmpdir_vocoder")
 
+# TTS file prefix
+speech_tts_prefix = "speech-tts-"
+wav_suffix = ".wav"
+
 # Load transcription model
 model = whisper.load_model("base")
 
+# Clean temporary files (called every 5 minutes)
+def clean_tmp():
+    print("[Speech REST API] Cleaning temporary files")
+    tmp_dir = tempfile.gettempdir()
+    for file in os.listdir(tmp_dir):
+        if file.startswith(speech_tts_prefix):
+            os.remove(os.path.join(tmp_dir, file))
+    print("[Speech REST API] Temporary files cleaned!")
+
+# TTS endpoint
 @app.route('/tts', methods=['POST'])
 def generate_tts():
-    if not request.json or not 'sentences' in request.json:
-        return jsonify({'error': 'Invalid input'})
+    if not request.json or 'sentences' not in request.json:
+        return jsonify({'error': 'Invalid input: sentences missing'}), 400
+
+    # Sentences to generate
     sentences = request.json['sentences']
+
     # Running the TTS
-    mel_outputs, mel_lengths, alignments = tacotron2.encode_batch(sentences)
+    mel_outputs, mel_length, alignment = tacotron2.encode_batch(sentences)
 
     # Running Vocoder (spectrogram-to-waveform)
     waveforms = hifi_gan.decode_batch(mel_outputs)
 
-    # Save the waveform to a file
-    file_path = 'example_TTS.wav'
-    torchaudio.save(file_path, waveforms.squeeze(1), 22050)
+    # Save waveform to temporary file
+    tmp_dir = tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + wav_suffix)
+    torchaudio.save(tmp_path, waveforms.squeeze(1), 22050)
 
-    return send_file(file_path, mimetype='audio/wav')
+    # Send file response
+    return send_file(tmp_path, mimetype='audio/wav')
 
+# Transcribe endpoint
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     if 'audio' not in request.files:
-        return jsonify({'error': 'audio file not found'}), 400
+        return jsonify({'error': 'Invalid input, form-data: audio'}), 400
 
     # Audio file
     audio_file = request.files['audio']
@@ -69,13 +90,18 @@ def transcribe():
         'text': text_result_trim
     }), 200
 
+# Health endpoint
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'ok'}), 200
 
+# Entry point
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3000))
 
-    print("[Whisper REST API] Starting server on port " + str(port))
+    # TODO: Run clean_tmp() every 5 minutes
 
-    app.run(host='0.0.0.0', port=80)
+    # Start server
+    print("[Speech REST API] Starting server on port " + str(port))
+
+    app.run(host='0.0.0.0', port=3000)
