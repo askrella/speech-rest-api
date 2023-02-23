@@ -3,7 +3,7 @@
 This project provides a simple Flask API to transcribe speech from an audio file using the Whisper speech recognition library.
 The API loads a pre-trained deep learning model to detect the spoken language and transcribe the speech to text.
 
-It also provides an endpoint to generate speech from a list of input sentences using the Tacotron2 and HiFiGAN models.
+It also provides an endpoint to generate speech from text using the Tacotron2 and HiFiGAN models.
 
 ## Requirements
 
