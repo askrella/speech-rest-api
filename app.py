@@ -6,6 +6,12 @@ import torchaudio
 from speechbrain.pretrained import Tacotron2, HIFIGAN
 import whisper
 from pydub import AudioSegment
+import re
+from num2words import num2words  
+from speechbrain.pretrained import Tacotron2, HIFIGAN
+import whisper
+from pydub import AudioSegment
+import re
 
 # Flask app
 app = Flask(__name__)
@@ -24,24 +30,22 @@ model = whisper.load_model("base")
 
 # Clean temporary files (called every 5 minutes)
 def clean_tmp():
-    print("[Speech REST API] Cleaning temporary files")
     tmp_dir = tempfile.gettempdir()
     for file in os.listdir(tmp_dir):
         if file.startswith(speech_tts_prefix):
             os.remove(os.path.join(tmp_dir, file))
     print("[Speech REST API] Temporary files cleaned!")
 
-# TTS endpoint
-@app.route('/tts', methods=['POST'])
-def generate_tts():
-    if not request.json or 'sentences' not in request.json:
-        return jsonify({'error': 'Invalid input: sentences missing'}), 400
+# Preprocess text to replace numerals with words
+def preprocess_text(text):
+    text = re.sub(r'\d+', lambda m: num2words(int(m.group(0))), text)
+    return text
 
-    # Sentences to generate
-    sentences = request.json['sentences']
-
+# Run TTS and save file
+# Returns the path to the file
+def run_tts_and_save_file(text):
     # Running the TTS
-    mel_outputs, mel_length, alignment = tacotron2.encode_batch(sentences)
+    mel_outputs, mel_length, alignment = tacotron2.encode_batch([text])
 
     # Running Vocoder (spectrogram-to-waveform)
     waveforms = hifi_gan.decode_batch(mel_outputs)
@@ -52,14 +56,58 @@ def generate_tts():
     # Save wav to temporary file
     tmp_path_wav = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + wav_suffix)
     torchaudio.save(tmp_path_wav, waveforms.squeeze(1), 22050)
+    return tmp_path_wav
 
-    # Convert file from wav to ogg
-    audio = AudioSegment.from_wav(tmp_path_wav)
+# TTS endpoint
+@app.route('/tts', methods=['POST'])
+def generate_tts():
+    if not request.json or 'text' not in request.json:
+        return jsonify({'error': 'Invalid input: text missing'}), 400
+
+    # Sentences to generate
+    text = request.json['text']
+
+    # Remove ' and " and  from text
+    text = text.replace("'", "")
+    text = text.replace('"', "")
+
+    # Preprocess text to replace numerals with words
+    text = preprocess_text(text)
+
+    # Split text by . ? !
+    sentences = re.split(r' *[\.\?!][\'"\)\]]* *', text)
+
+    # Trim sentences
+    sentences = [sentence.strip() for sentence in sentences]
+
+    # Remove empty sentences
+    sentences = [sentence for sentence in sentences if sentence]
+
+    # Logging
+    print("[Speech REST API] Got request: length (" + str(len(text)) + "), sentences (" + str(len(sentences)) + ")")
+
+    # Run TTS for each sentence
+    output_files = []
+
+    for sentence in sentences:
+        print("[Speech REST API] Generating TTS: " + sentence)
+        tmp_path_wav = run_tts_and_save_file(sentence)
+        output_files.append(tmp_path_wav)
+
+    # Concatenate all files
+    audio = AudioSegment.empty()
+
+    for file in output_files:
+        audio += AudioSegment.from_wav(file)
+
+    # Save audio to file
+    tmp_dir = tempfile.gettempdir()
     tmp_path_opus = os.path.join(tmp_dir, speech_tts_prefix + str(uuid.uuid4()) + opus_suffix)
     audio.export(tmp_path_opus, format="opus")
 
-    # Delete wav file
-    os.remove(tmp_path_wav)
+    # Delete tmp files
+    for file in output_files:
+        os.remove(file)
 
     # Send file response
     return send_file(tmp_path_opus, mimetype='audio/ogg, codecs=opus')
