@@ -1,17 +1,13 @@
 import os
-import uuid
+import re
 import tempfile
-from flask import Flask, request, jsonify, send_file
+import uuid
+from flask import Flask, jsonify, request, send_file
+from num2words import num2words
+from pydub import AudioSegment
 import torchaudio
-from speechbrain.pretrained import Tacotron2, HIFIGAN
+from speechbrain.pretrained import HIFIGAN, Tacotron2
 import whisper
-from pydub import AudioSegment
-import re
-from num2words import num2words  
-from speechbrain.pretrained import Tacotron2, HIFIGAN
-import whisper
-from pydub import AudioSegment
-import re
 
 # Flask app
 app = Flask(__name__)
