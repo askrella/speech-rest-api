@@ -33,7 +33,7 @@ python app.py
 
 ## Documentation
 
-This endpoint generates speech from a list of input sentences using the Tacotron2 and HiFiGAN models.
+This endpoint generates speech from a text using the Tacotron2 and HiFiGAN models.
 
 ```bash
 POST http://localhost:80/tts
@@ -41,17 +41,13 @@ POST http://localhost:80/tts
 
 The request body must be a JSON object with the following field:
 
-- sentences (required): A list of sentences to be converted to speech.
+- text (required): The text you want to hear spoken in the audio file.
 
 Example:
 
 ```json
 {
-    "sentences": [
-        "Hello, how are you?",
-        "My name is ChatGPT.",
-        "It's a pleasure to meet you."
-    ]
+    "text": "Hello, I can do some text to speech. Thats awesome!"
 }
 ```
 
