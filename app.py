@@ -1,4 +1,6 @@
 import os
+import torch
+import torch
 import re
 import tempfile
 import uuid
@@ -8,6 +10,8 @@ from pydub import AudioSegment
 import torchaudio
 from speechbrain.pretrained import HIFIGAN, Tacotron2
 import whisper
+from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
+
 
 # Flask app
 app = Flask(__name__)
@@ -16,10 +20,21 @@ app = Flask(__name__)
 tacotron2 = Tacotron2.from_hparams(source="speechbrain/tts-tacotron2-ljspeech", savedir="tmpdir_tts")
 hifi_gan = HIFIGAN.from_hparams(source="speechbrain/tts-hifigan-ljspeech", savedir="tmpdir_vocoder")
 
+# Load image generation model
+model_id = "stabilityai/stable-diffusion-2-1"
+pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float32)
+pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+
+
 # TTS file prefix
 speech_tts_prefix = "speech-tts-"
 wav_suffix = ".wav"
 opus_suffix = ".opus"
+
+# Image file prefix
+image_prefix = "generated-image-"
+image_suffix = ".png"
+
 
 # Load transcription model
 model = whisper.load_model("base")
@@ -28,9 +43,32 @@ model = whisper.load_model("base")
 def clean_tmp():
     tmp_dir = tempfile.gettempdir()
     for file in os.listdir(tmp_dir):
-        if file.startswith(speech_tts_prefix):
+        if file.startswith(image_prefix) or file.startswith(speech_tts_prefix):
             os.remove(os.path.join(tmp_dir, file))
-    print("[Speech REST API] Temporary files cleaned!")
+    print("[API] Temporary files cleaned!")
+
+
+
+# Image generation endpoint
+@app.route('/image', methods=['POST'])
+def generate_image():
+    if not request.json or 'prompt' not in request.json:
+        return jsonify({'error': 'Invalid input: prompt missing'}), 400
+
+    prompt = request.json['prompt']
+
+    # Generate the image
+    image = pipe(prompt).images[0]
+
+    # Save image to temporary file
+    tmp_dir = tempfile.gettempdir()
+    tmp_path = os.path.join(tmp_dir, image_prefix + str(uuid.uuid4()) + image_suffix)
+    image.save(tmp_path)
+
+    # Send file response
+    return send_file(tmp_path, mimetype='image/png')
+
+
 
 # Preprocess text to replace numerals with words
 def preprocess_text(text):
@@ -158,9 +196,9 @@ def clean():
 
 # Entry point
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 3000))
+    port = int(os.environ.get('PORT', 8080))
 
     # Start server
     print("[Speech REST API] Starting server on port " + str(port))
 
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=8080)
