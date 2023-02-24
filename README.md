@@ -60,7 +60,7 @@ Here's an example curl command that generates speech from a list of input senten
 ```sh
 curl -X POST \
   -H "Content-Type: application/json" \
-  --data '{"sentences": ["Hello, how are you?", "My name is Shubh.", "It\'s a pleasure to meet you."]}' \
+  --data '{"text": "Hello, how are you? My name is Shubh. It is a pleasure to meet you."}' \
   http://localhost:80/tts \
   --output output.wav
 ```
