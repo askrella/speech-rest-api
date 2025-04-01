@@ -6,7 +6,7 @@ ffmpeg-python==0.2.0
 filelock==3.9.0
 Flask==2.2.3
 future==0.18.3
-huggingface-hub==0.12.1
+huggingface-hub==0.13.4
 HyperPyYAML==1.1.0
 idna==3.4
 importlib-metadata==6.0.0
@@ -22,7 +22,7 @@ packaging==23.0
 pydub==0.25.1
 PyYAML==6.0
 regex==2022.10.31
-requests==2.28.2
+requests==2.31.0
 ruamel.yaml==0.17.21
 ruamel.yaml.clib==0.2.7
 scipy==1.10.1
