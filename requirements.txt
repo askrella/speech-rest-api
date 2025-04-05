@@ -32,7 +32,7 @@ tokenizers==0.13.2
 torch==1.13.1
 torchaudio==0.13.1
 tqdm==4.64.1
-transformers==4.26.1
+transformers==4.30.0
 typing_extensions==4.5.0
 urllib3==1.26.14
 Werkzeug==2.2.3
