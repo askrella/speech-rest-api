@@ -29,11 +29,11 @@ scipy==1.10.1
 sentencepiece==0.1.97
 speechbrain==0.5.13
 tokenizers==0.13.2
-torch==1.13.1
+torch==2.9.0
 torchaudio==0.13.1
 tqdm==4.64.1
 transformers==4.26.1
 typing_extensions==4.5.0
-urllib3==1.26.14
-Werkzeug==2.2.3
+urllib3==2.6.3
+Werkzeug==3.1.5
 zipp==3.14.0
